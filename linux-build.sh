@@ -6,22 +6,34 @@ if [[ -z "$TOOLCHAIN_DIR" ]]; then
 	TOOLCHAIN_DIR=/toolchain
 fi
 
+if [[ "$1" = 32 ]]; then
+	export ABI=32
+else
+	export ABI=64
+fi
+
 INFRASTRUCTURE=ftp://gcc.gnu.org/pub/gcc/infrastructure/
 
-GMP_VER=6.1.2
+GMP_VER=6.1.0
 ISL_VER=0.16.1
 MPC_VER=1.0.3
 MPFR_VER=3.1.4
 GCC_VER=6.3.0
 OPENSSL_VER=1.0.2k
 
-mkdir "$TOOLCHAIN_DIR"
+mkdir -p "$TOOLCHAIN_DIR"
 
 export PATH="${TOOLCHAIN_DIR}/bin:${PATH}"
-export LD_LIBRARY_PATH="${TOOLCHAIN_DIR}/lib64:${TOOLCHAIN_DIR}/lib:${LD_LIBRARY_PATH}"
-export CFLAGS="-I${TOOLCHAIN_DIR}/include"
-export CXXFLAGS="-I${TOOLCHAIN_DIR}/include"
 
+if [[ "$ABI" = 32 ]]; then
+	export LD_LIBRARY_PATH="${TOOLCHAIN_DIR}/lib:${LD_LIBRARY_PATH}"
+	export CFLAGS="-L${TOOLCHAIN_DIR}/lib -I${TOOLCHAIN_DIR}/include -m32"
+	export CXXFLAGS="-L${TOOLCHAIN_DIR}/lib -I${TOOLCHAIN_DIR}/include -m32"
+else
+	export LD_LIBRARY_PATH="${TOOLCHAIN_DIR}/lib64:${TOOLCHAIN_DIR}/lib:${LD_LIBRARY_PATH}"
+	export CFLAGS="-L${TOOLCHAIN_DIR}/lib64 -L${TOOLCHAIN_DIR}/lib -I${TOOLCHAIN_DIR}/include -m64"
+	export CXXFLAGS="-L${TOOLCHAIN_DIR}/lib64 -L${TOOLCHAIN_DIR}/lib -I${TOOLCHAIN_DIR}/include -m64"
+fi
 
 echo "Building GMP"
 FILE="gmp-${GMP_VER}.tar.bz2"
@@ -36,19 +48,19 @@ make install
 cd ..
 
 echo "Building MPFR"
-FILE="mpfr-${GMP_VER}.tar.bz2"
+FILE="mpfr-${MPFR_VER}.tar.bz2"
 curl "${INFRASTRUCTURE}${FILE}" -o "$FILE"
 tar -xf "$FILE"
 rm "$FILE"
-cd "mpfr-${MPF_VER}"
-./configure --disable-dependency-tracking --prefix="$TOOLCHAIN_DIR" --disable-silent-rules
+cd "mpfr-${MPFR_VER}"
+./configure --disable-dependency-tracking --prefix="$TOOLCHAIN_DIR"
 make
 make check
 make install
 cd ..
 
 echo "Building MPC"
-FILE="mpc-${GMP_VER}.tar.gz"
+FILE="mpc-${MPC_VER}.tar.gz"
 curl "${INFRASTRUCTURE}${FILE}" -o "$FILE"
 tar -xf "$FILE"
 rm "$FILE"
@@ -61,7 +73,7 @@ cd ..
 
 
 echo "Building ISL"
-FILE="isl-${GMP_VER}.tar.bz2"
+FILE="isl-${ISL_VER}.tar.bz2"
 curl "${INFRASTRUCTURE}${FILE}" -o "$FILE"
 tar -xf "$FILE"
 rm "$FILE"
