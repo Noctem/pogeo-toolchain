@@ -2,3 +2,12 @@ perl Configure VC-WIN32 --prefix=C:\OpenSSL-x86 no-shared no-ssl2 no-ssl3 no-ide
 ms\do_ms
 nmake -f ms\nt.mak 
 nmake -f ms\nt.mak install
+
+set LIB=%LIB%;C:\OpenSSL-x86\lib
+set INCLUDE=%INCLUDE%;C:\OpenSSL-x86\include
+
+cd ..\pthreads
+nmake clean VC-static
+
+set LIB=%LIB%;C:\pthreads-x86\
+set INCLUDE=%INCLUDE%;C:\pthreads-x86
