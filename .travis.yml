@@ -1,0 +1,19 @@
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode6.4
+      language: generic
+    - os: osx
+      osx_image: xcode7.3
+      language: generic
+    - os: osx
+      osx_image: xcode8.3
+      language: generic
+
+before_install:
+  - brew update
+
+install:
+  - brew install --build-bottle python35.rb
+  - brew bottle --force-core-tap python35
+  - curl --upload-file python*bottle* https://transfer.sh/
