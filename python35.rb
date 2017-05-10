@@ -3,6 +3,7 @@ class Python35 < Formula
   homepage "https://www.python.org/"
   url "https://www.python.org/ftp/python/3.5.3/Python-3.5.3.tar.xz"
   sha256 "eefe2ad6575855423ab630f5b51a8ef6e5556f774584c06beab4926f930ddbb0"
+  revision 1
 
   bottle do
     root_url "https://github.com/Noctem/pogeo-toolchain/releases/download/1.0"
@@ -11,12 +12,8 @@ class Python35 < Formula
     sha256 "996b2a39ca82a0a7ec600b470ee969e4c0357bfcaf0240ae8354dcea29b1ead0" => :sierra
   end
 
-  option "with-tcl-tk", "Use Homebrew's Tk instead of macOS Tk (has optional Cocoa and threads support)"
   option "with-quicktest", "Run `make quicktest` after the build"
   option "with-sphinx-doc", "Build HTML documentation"
-
-  deprecated_option "quicktest" => "with-quicktest"
-  deprecated_option "with-brewed-tk" => "with-tcl-tk"
 
   depends_on "pkg-config" => :build
   depends_on "readline" => :recommended
@@ -24,7 +21,6 @@ class Python35 < Formula
   depends_on "gdbm" => :recommended
   depends_on "openssl"
   depends_on "xz" => :recommended # for the lzma module added in 3.3
-  depends_on "tcl-tk" => :optional
   depends_on "sphinx-doc" => [:build, :optional]
 
   skip_clean "bin/pip3", "bin/pip-3.4", "bin/pip-3.5"
@@ -49,11 +45,6 @@ class Python35 < Formula
     build 425
     cause "https://bugs.python.org/issue24844"
   end
-
-  # Homebrew's tcl-tk is built in a standard unix fashion (due to link errors)
-  # so we have to stop python from searching for frameworks and linking against
-  # X11.
-  patch :DATA if build.with? "tcl-tk"
 
   def lib_cellar
     prefix/"Frameworks/Python.framework/Versions/#{xy}/lib/python#{xy}"
@@ -106,13 +97,9 @@ class Python35 < Formula
     unless MacOS::CLT.installed?
       # Help Python's build system (setuptools/pip) to build things on Xcode-only systems
       # The setup.py looks at "-isysroot" to get the sysroot (and not at --sysroot)
-      cflags   << "-isysroot #{MacOS.sdk_path}"
+      cflags   << "-isysroot #{MacOS.sdk_path} -I#{MacOS.sdk_path}/System/Library/Frameworks/Tk.framework/Versions/8.5/Headers"
       ldflags  << "-isysroot #{MacOS.sdk_path}"
       cppflags << "-I#{MacOS.sdk_path}/usr/include" # find zlib
-      # For the Xlib.h, Python needs this header dir with the system Tk
-      if build.without? "tcl-tk"
-        cflags << "-I#{MacOS.sdk_path}/System/Library/Frameworks/Tk.framework/Versions/8.5/Headers"
-      end
     end
     # Avoid linking to libgcc https://mail.python.org/pipermail/python-dev/2012-February/116205.html
     args << "MACOSX_DEPLOYMENT_TARGET=#{MacOS.version}"
@@ -139,12 +126,6 @@ class Python35 < Formula
     inreplace "./Lib/ctypes/macholib/dyld.py" do |f|
       f.gsub! "DEFAULT_LIBRARY_FALLBACK = [", "DEFAULT_LIBRARY_FALLBACK = [ '#{HOMEBREW_PREFIX}/lib',"
       f.gsub! "DEFAULT_FRAMEWORK_FALLBACK = [", "DEFAULT_FRAMEWORK_FALLBACK = [ '#{HOMEBREW_PREFIX}/Frameworks',"
-    end
-
-    if build.with? "tcl-tk"
-      tcl_tk = Formula["tcl-tk"].opt_prefix
-      cppflags << "-I#{tcl_tk}/include"
-      ldflags  << "-L#{tcl_tk}/lib"
     end
 
     args << "CFLAGS=#{cflags.join(" ")}" unless cflags.empty?
@@ -255,11 +236,6 @@ class Python35 < Formula
       library_dirs << Formula["sqlite"].opt_lib
     end
 
-    if build.with? "tcl-tk"
-      include_dirs << Formula["tcl-tk"].opt_include
-      library_dirs << Formula["tcl-tk"].opt_lib
-    end
-
     cfg = lib_cellar/"distutils/distutils.cfg"
     cfg.atomic_write <<-EOF.undent
       [install]
@@ -272,7 +248,7 @@ class Python35 < Formula
   end
 
   def xy
-    version.to_s.slice(/(3\.\d)/) || "3.6"
+    version.to_s.slice(/(3\.\d)/) || "3.5"
   end
 
   def sitecustomize
@@ -327,14 +303,6 @@ class Python35 < Formula
       See: http://docs.brew.sh/Homebrew-and-Python.html
     EOS
 
-    # Tk warning only for 10.6
-    tk_caveats = <<-EOS.undent
-
-      Apple's Tcl/Tk is not recommended for use with Python on Mac OS X 10.6.
-      For more information see: https://www.python.org/download/mac/tcltk/
-    EOS
-
-    text += tk_caveats unless MacOS.version >= :lion
     text
   end
 
@@ -347,53 +315,3 @@ class Python35 < Formula
     system bin/"pip3", "list"
   end
 end
-
-__END__
-diff --git a/setup.py b/setup.py
-index 2779658..902d0eb 100644
---- a/setup.py
-+++ b/setup.py
-@@ -1699,9 +1699,6 @@ class PyBuildExt(build_ext):
-         # Rather than complicate the code below, detecting and building
-         # AquaTk is a separate method. Only one Tkinter will be built on
-         # Darwin - either AquaTk, if it is found, or X11 based Tk.
--        if (host_platform == 'darwin' and
--            self.detect_tkinter_darwin(inc_dirs, lib_dirs)):
--            return
-
-         # Assume we haven't found any of the libraries or include files
-         # The versions with dots are used on Unix, and the versions without
-@@ -1747,22 +1744,6 @@ class PyBuildExt(build_ext):
-             if dir not in include_dirs:
-                 include_dirs.append(dir)
-
--        # Check for various platform-specific directories
--        if host_platform == 'sunos5':
--            include_dirs.append('/usr/openwin/include')
--            added_lib_dirs.append('/usr/openwin/lib')
--        elif os.path.exists('/usr/X11R6/include'):
--            include_dirs.append('/usr/X11R6/include')
--            added_lib_dirs.append('/usr/X11R6/lib64')
--            added_lib_dirs.append('/usr/X11R6/lib')
--        elif os.path.exists('/usr/X11R5/include'):
--            include_dirs.append('/usr/X11R5/include')
--            added_lib_dirs.append('/usr/X11R5/lib')
--        else:
--            # Assume default location for X11
--            include_dirs.append('/usr/X11/include')
--            added_lib_dirs.append('/usr/X11/lib')
--
-         # If Cygwin, then verify that X is installed before proceeding
-         if host_platform == 'cygwin':
-             x11_inc = find_file('X11/Xlib.h', [], include_dirs)
-@@ -1786,10 +1767,6 @@ class PyBuildExt(build_ext):
-         if host_platform in ['aix3', 'aix4']:
-             libs.append('ld')
-
--        # Finally, link with the X11 libraries (not appropriate on cygwin)
--        if host_platform != "cygwin":
--            libs.append('X11')
--
-         ext = Extension('_tkinter', ['_tkinter.c', 'tkappinit.c'],
-                         define_macros=[('WITH_APPINIT', 1)] + defs,
-                         include_dirs = include_dirs,
