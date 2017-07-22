@@ -6,12 +6,6 @@ if [[ -z "$TOOLCHAIN_DIR" ]]; then
 	TOOLCHAIN_DIR=/toolchain
 fi
 
-if [[ "$1" = 32 ]]; then
-	export ABI=32
-else
-	export ABI=64
-fi
-
 INFRASTRUCTURE=ftp://gcc.gnu.org/pub/gcc/infrastructure/
 
 GMP_VER=6.1.0
@@ -19,16 +13,19 @@ ISL_VER=0.16.1
 MPC_VER=1.0.3
 MPFR_VER=3.1.4
 GCC_VER=7.1.0
+BINUTILS_VER=2.28
 
 mkdir -p "$TOOLCHAIN_DIR"
 
 export PATH="${TOOLCHAIN_DIR}/bin:${PATH}"
 
-if [[ "$ABI" = 32 ]]; then
+if [[ "$1" = 32 ]]; then
+	export ABI=32
 	export LD_LIBRARY_PATH="${TOOLCHAIN_DIR}/lib:${LD_LIBRARY_PATH}"
 	export CFLAGS="-L${TOOLCHAIN_DIR}/lib -I${TOOLCHAIN_DIR}/include -m32"
 	export CXXFLAGS="-L${TOOLCHAIN_DIR}/lib -I${TOOLCHAIN_DIR}/include -m32"
 else
+	export ABI=64
 	export LD_LIBRARY_PATH="${TOOLCHAIN_DIR}/lib64:${TOOLCHAIN_DIR}/lib:${LD_LIBRARY_PATH}"
 	export CFLAGS="-L${TOOLCHAIN_DIR}/lib64 -L${TOOLCHAIN_DIR}/lib -I${TOOLCHAIN_DIR}/include -m64"
 	export CXXFLAGS="-L${TOOLCHAIN_DIR}/lib64 -L${TOOLCHAIN_DIR}/lib -I${TOOLCHAIN_DIR}/include -m64"
@@ -90,4 +87,13 @@ mkdir "gcc-${GCC_VER}/build"
 cd "gcc-${GCC_VER}/build"
 ../configure --prefix="$TOOLCHAIN_DIR" --enable-languages=c,c++ --with-gmp="$TOOLCHAIN_DIR" --with-mpfr="$TOOLCHAIN_DIR" --with-isl="$TOOLCHAIN_DIR" --with-mpc="$TOOLCHAIN_DIR" --disable-werror --disable-multilib
 make bootstrap
+make install
+
+echo "Building binutils"
+FILE="binutils-${BINUTILS_VER}.tar.bz2"
+curl "https://ftp.gnu.org/gnu/binutils/${FILE}" -o "$FILE"
+tar -xf "$FILE"
+cd "binutils-${BINUTILS_VER}"
+./configure --disable-debug --disable-dependency-tracking --prefix="$TOOLCHAIN_DIR" --with-gmp="$TOOLCHAIN_DIR" --with-mpfr="$TOOLCHAIN_DIR" --with-isl="${TOOLCHAIN_DIR}" --with-mpc="$TOOLCHAIN_DIR"
+make
 make install
