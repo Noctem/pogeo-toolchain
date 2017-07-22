@@ -3,10 +3,9 @@ class Python35 < Formula
   homepage "https://www.python.org/"
   url "https://www.python.org/ftp/python/3.5.3/Python-3.5.3.tar.xz"
   sha256 "eefe2ad6575855423ab630f5b51a8ef6e5556f774584c06beab4926f930ddbb0"
-  revision 1
 
   bottle do
-    root_url "https://github.com/Noctem/pogeo-toolchain/releases/download/v1.1"
+    root_url "https://github.com/Noctem/pogeo-toolchain/releases/download/v1.3"
     sha256 "d96a23acc06a70e146562a871c466fa5033a47e1ac2e7835c0d2d1eea4ba8ed8" => :yosemite
     sha256 "6277a3a62d885c8e1937d5fa0a5d4cf04929aaebd2c524d79fee8a8c95a4e3e7" => :el_capitan
     sha256 "7aea5ad54a035df5bd40a2fc620253f936b278c69924bb9c4008a19b4e57c43f" => :sierra
@@ -27,36 +26,23 @@ class Python35 < Formula
   skip_clean "bin/easy_install3", "bin/easy_install-3.4", "bin/easy_install-3.5"
 
   resource "setuptools" do
-    url "https://pypi.python.org/packages/dc/8c/7c9869454bdc53e72fb87ace63eac39336879eef6f2bf96e946edbf03e90/setuptools-33.1.1.zip"
+    url "https://files.pythonhosted.org/packages/source/s/setuptools/setuptools-33.1.1.zip"
     sha256 "6b20352ed60ba08c43b3611bdb502286f7a869fbfcf472f40d7279f1e77de145"
   end
 
   resource "pip" do
-    url "https://pypi.python.org/packages/11/b6/abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/pip-9.0.1.tar.gz"
+    url "https://files.pythonhosted.org/packages/source/p/pip/pip-9.0.1.tar.gz"
     sha256 "09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d"
   end
 
   resource "wheel" do
-    url "https://pypi.python.org/packages/source/w/wheel/wheel-0.29.0.tar.gz"
+    url "https://files.pythonhosted.org/packages/source/w/wheel/wheel-0.29.0.tar.gz"
     sha256 "1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648"
   end
 
   fails_with :clang do
     build 425
     cause "https://bugs.python.org/issue24844"
-  end
-
-  def lib_cellar
-    prefix/"Frameworks/Python.framework/Versions/#{xy}/lib/python#{xy}"
-  end
-
-  def site_packages_cellar
-    lib_cellar/"site-packages"
-  end
-
-  # The HOMEBREW_PREFIX location of site-packages.
-  def site_packages
-    HOMEBREW_PREFIX/"lib/python#{xy}/site-packages"
   end
 
   # setuptools remembers the build flags python is built with and uses them to
@@ -77,6 +63,9 @@ class Python35 < Formula
     # and not into some other Python the user has installed.
     ENV["PYTHONHOME"] = nil
     ENV["PYTHONPATH"] = nil
+
+    xy = (buildpath/"configure.ac").read.slice(/PYTHON_VERSION, (3\.\d)/, 1)
+    lib_cellar = prefix/"Frameworks/Python.framework/Versions/#{xy}/lib/python#{xy}"
 
     args = %W[
       --prefix=#{prefix}
@@ -172,7 +161,7 @@ class Python35 < Formula
     rm bin/"2to3"
 
     # Remove the site-packages that Python created in its Cellar.
-    site_packages_cellar.rmtree
+    (prefix/"Frameworks/Python.framework/Versions/#{xy}/lib/python#{xy}/site-packages").rmtree
 
     %w[setuptools pip wheel].each do |r|
       (libexec/r).install resource(r)
@@ -187,6 +176,12 @@ class Python35 < Formula
   end
 
   def post_install
+    ENV.delete "PYTHONPATH"
+
+    xy = (prefix/"Frameworks/Python.framework/Versions").children.first.basename.to_s
+    site_packages = HOMEBREW_PREFIX/"lib/python#{xy}/site-packages"
+    site_packages_cellar = prefix/"Frameworks/Python.framework/Versions/#{xy}/lib/python#{xy}/site-packages"
+
     # Fix up the site-packages so that user-installed Python software survives
     # minor updates, such as going from 3.3.2 to 3.3.3:
 
@@ -236,7 +231,8 @@ class Python35 < Formula
       library_dirs << Formula["sqlite"].opt_lib
     end
 
-    cfg = lib_cellar/"distutils/distutils.cfg"
+    cfg = prefix/"Frameworks/Python.framework/Versions/#{xy}/lib/python#{xy}/distutils/distutils.cfg"
+
     cfg.atomic_write <<-EOF.undent
       [install]
       prefix=#{HOMEBREW_PREFIX}
@@ -247,11 +243,9 @@ class Python35 < Formula
     EOF
   end
 
-  def xy
-    version.to_s.slice(/(3\.\d)/) || "3.5"
-  end
-
   def sitecustomize
+    xy = (prefix/"Frameworks/Python.framework/Versions").children.first.basename.to_s
+
     <<-EOF.undent
       # This file is created by Homebrew and is executed on each python startup.
       # Don't print from here, or else python command line scripts may fail!
@@ -282,7 +276,7 @@ class Python35 < Formula
           # the Cellar site-packages is a symlink to the HOMEBREW_PREFIX
           # site_packages; prefer the shorter paths
           long_prefix = re.compile(r'#{rack}/[0-9\._abrc]+/Frameworks/Python\.framework/Versions/#{xy}/lib/python#{xy}/site-packages')
-          sys.path = [long_prefix.sub('#{site_packages}', p) for p in sys.path]
+          sys.path = [long_prefix.sub('#{HOMEBREW_PREFIX/"lib/python#{xy}/site-packages"}', p) for p in sys.path]
 
           # Set the sys.executable to use the opt_prefix
           sys.executable = '#{opt_bin}/python#{xy}'
@@ -290,6 +284,11 @@ class Python35 < Formula
   end
 
   def caveats
+    if prefix.exist?
+      xy = (prefix/"Frameworks/Python.framework/Versions").children.first.basename.to_s
+    else
+      xy = version.to_s.slice(/(3\.\d)/) || "3.5"
+    end
     text = <<-EOS.undent
       Pip, setuptools, and wheel have been installed. To update them
         pip3 install --upgrade pip setuptools wheel
@@ -298,7 +297,7 @@ class Python35 < Formula
         pip3 install <package>
 
       They will install into the site-package directory
-        #{site_packages}
+        #{HOMEBREW_PREFIX/"lib/python#{xy}/site-packages"}
 
       See: http://docs.brew.sh/Homebrew-and-Python.html
     EOS
@@ -307,6 +306,7 @@ class Python35 < Formula
   end
 
   test do
+    xy = (prefix/"Frameworks/Python.framework/Versions").children.first.basename.to_s
     # Check if sqlite is ok, because we build with --enable-loadable-sqlite-extensions
     # and it can occur that building sqlite silently fails if OSX's sqlite is used.
     system "#{bin}/python#{xy}", "-c", "import sqlite3"
