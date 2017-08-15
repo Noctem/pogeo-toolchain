@@ -6,9 +6,9 @@ class Python35 < Formula
 
   bottle do
     root_url "https://github.com/Noctem/pogeo-toolchain/releases/download/v1.4"
-    sha256 "7d772cbdbeab117df51295333b2fe8cceb678d20d044dcf727c115c4743d82b9" => :sierra
-    sha256 "a095b9d208a37bfebc3c39e9d278b03b5eaf88ce4e88c23f644a70a9c042a0e0" => :el_capitan
-    sha256 "22b5437e104514b8ba1808adcf31766c77d64006124b0a2925d0f3b8edc338f7" => :yosemite
+    sha256 "9e1f6180844012247a4f05c7c20d9e0d17464891bdfd9765070870a5a01654be" => :sierra
+    sha256 "1549fdc9fa6562ceaceb390cef6c52e328cc36cac3b82c4b887937b46a6c0efc" => :el_capitan
+    sha256 "98f3cea14bd50ddc6717217a0608d3f4e6b3ab561e849827e9af26190b533c1a" => :yosemite
   end
 
   option "with-quicktest", "Run `make quicktest` after the build"
