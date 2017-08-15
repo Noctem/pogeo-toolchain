@@ -1,11 +1,11 @@
 class Python35 < Formula
   desc "Interpreted, interactive, object-oriented programming language"
   homepage "https://www.python.org/"
-  url "https://www.python.org/ftp/python/3.5.3/Python-3.5.3.tar.xz"
-  sha256 "eefe2ad6575855423ab630f5b51a8ef6e5556f774584c06beab4926f930ddbb0"
+  url "https://www.python.org/ftp/python/3.5.4/Python-3.5.4.tar.xz"
+  sha256 "94d93bfabb3b109f8a10365a325f920f9ec98c6e2380bf228f9700a14054c84c"
 
   bottle do
-    root_url "https://github.com/Noctem/pogeo-toolchain/releases/download/v1.3"
+    root_url "https://github.com/Noctem/pogeo-toolchain/releases/download/v1.4"
     sha256 "7d772cbdbeab117df51295333b2fe8cceb678d20d044dcf727c115c4743d82b9" => :sierra
     sha256 "a095b9d208a37bfebc3c39e9d278b03b5eaf88ce4e88c23f644a70a9c042a0e0" => :el_capitan
     sha256 "22b5437e104514b8ba1808adcf31766c77d64006124b0a2925d0f3b8edc338f7" => :yosemite
@@ -26,8 +26,8 @@ class Python35 < Formula
   skip_clean "bin/easy_install3", "bin/easy_install-3.4", "bin/easy_install-3.5"
 
   resource "setuptools" do
-    url "https://files.pythonhosted.org/packages/source/s/setuptools/setuptools-33.1.1.zip"
-    sha256 "6b20352ed60ba08c43b3611bdb502286f7a869fbfcf472f40d7279f1e77de145"
+    url "https://files.pythonhosted.org/packages/source/s/setuptools/setuptools-36.2.7.zip"
+    sha256 "b0fe5d432d922df595e918577c51458d63f245115d141b309ac32ecfca329df5"
   end
 
   resource "pip" do
@@ -249,7 +249,7 @@ class Python35 < Formula
     <<-EOF.undent
       # This file is created by Homebrew and is executed on each python startup.
       # Don't print from here, or else python command line scripts may fail!
-      # <http://docs.brew.sh/Homebrew-and-Python.html>
+      # <https://docs.brew.sh/Homebrew-and-Python.html>
       import re
       import os
       import sys
@@ -299,7 +299,7 @@ class Python35 < Formula
       They will install into the site-package directory
         #{HOMEBREW_PREFIX/"lib/python#{xy}/site-packages"}
 
-      See: http://docs.brew.sh/Homebrew-and-Python.html
+      See: https://docs.brew.sh/Homebrew-and-Python.html
     EOS
 
     text
