@@ -11,7 +11,6 @@ class Python35 < Formula
     sha256 "98f3cea14bd50ddc6717217a0608d3f4e6b3ab561e849827e9af26190b533c1a" => :yosemite
   end
 
-  option "with-quicktest", "Run `make quicktest` after the build"
   option "with-sphinx-doc", "Build HTML documentation"
 
   depends_on "pkg-config" => :build
@@ -26,18 +25,18 @@ class Python35 < Formula
   skip_clean "bin/easy_install3", "bin/easy_install-3.4", "bin/easy_install-3.5"
 
   resource "setuptools" do
-    url "https://files.pythonhosted.org/packages/source/s/setuptools/setuptools-36.2.7.zip"
-    sha256 "b0fe5d432d922df595e918577c51458d63f245115d141b309ac32ecfca329df5"
+    url "https://files.pythonhosted.org/packages/a4/c8/9a7a47f683d54d83f648d37c3e180317f80dc126a304c45dc6663246233a/setuptools-36.5.0.zip"
+    sha256 "ce2007c1cea3359870b80657d634253a0765b0c7dc5a988d77ba803fc86f2c64"
   end
 
   resource "pip" do
-    url "https://files.pythonhosted.org/packages/source/p/pip/pip-9.0.1.tar.gz"
+    url "https://files.pythonhosted.org/packages/11/b6/abcb525026a4be042b486df43905d6893fb04f05aac21c32c638e939e447/pip-9.0.1.tar.gz"
     sha256 "09f243e1a7b461f654c26a725fa373211bb7ff17a9300058b205c61658ca940d"
   end
 
   resource "wheel" do
-    url "https://files.pythonhosted.org/packages/source/w/wheel/wheel-0.29.0.tar.gz"
-    sha256 "1ebb8ad7e26b448e9caa4773d2357849bf80ff9e313964bcaf79cbf0201a1648"
+    url "https://files.pythonhosted.org/packages/fa/b4/f9886517624a4dcb81a1d766f68034344b7565db69f13d52697222daeb72/wheel-0.30.0.tar.gz"
+    sha256 "9515fe0a94e823fd90b08d22de45d7bde57c90edce705b22f5e1ecf7e1b653c8"
   end
 
   fails_with :clang do
@@ -48,10 +47,10 @@ class Python35 < Formula
   # setuptools remembers the build flags python is built with and uses them to
   # build packages later. Xcode-only systems need different flags.
   pour_bottle? do
-    reason <<-EOS.undent
-    The bottle needs the Apple Command Line Tools to be installed.
-      You can install them, if desired, with:
-        xcode-select --install
+    reason <<~EOS
+      The bottle needs the Apple Command Line Tools to be installed.
+        You can install them, if desired, with:
+          xcode-select --install
     EOS
     satisfy { MacOS::CLT.installed? }
   end
@@ -84,6 +83,7 @@ class Python35 < Formula
     cppflags = []
 
     unless MacOS::CLT.installed?
+      puts "no CLT."
       # Help Python's build system (setuptools/pip) to build things on Xcode-only systems
       # The setup.py looks at "-isysroot" to get the sysroot (and not at --sysroot)
       cflags   << "-isysroot #{MacOS.sdk_path} -I#{MacOS.sdk_path}/System/Library/Frameworks/Tk.framework/Versions/8.5/Headers"
@@ -233,20 +233,20 @@ class Python35 < Formula
 
     cfg = prefix/"Frameworks/Python.framework/Versions/#{xy}/lib/python#{xy}/distutils/distutils.cfg"
 
-    cfg.atomic_write <<-EOF.undent
+    cfg.atomic_write <<~EOS
       [install]
       prefix=#{HOMEBREW_PREFIX}
 
       [build_ext]
       include_dirs=#{include_dirs.join ":"}
       library_dirs=#{library_dirs.join ":"}
-    EOF
+    EOS
   end
 
   def sitecustomize
     xy = (prefix/"Frameworks/Python.framework/Versions").children.first.basename.to_s
 
-    <<-EOF.undent
+    <<~EOS
       # This file is created by Homebrew and is executed on each python startup.
       # Don't print from here, or else python command line scripts may fail!
       # <https://docs.brew.sh/Homebrew-and-Python.html>
@@ -280,7 +280,7 @@ class Python35 < Formula
 
           # Set the sys.executable to use the opt_prefix
           sys.executable = '#{opt_bin}/python#{xy}'
-    EOF
+    EOS
   end
 
   def caveats
@@ -289,7 +289,7 @@ class Python35 < Formula
     else
       xy = version.to_s.slice(/(3\.\d)/) || "3.5"
     end
-    text = <<-EOS.undent
+    text = <<~EOS
       Pip, setuptools, and wheel have been installed. To update them
         pip3 install --upgrade pip setuptools wheel
 
