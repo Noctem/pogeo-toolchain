@@ -5,10 +5,10 @@ class Python35 < Formula
   sha256 "94d93bfabb3b109f8a10365a325f920f9ec98c6e2380bf228f9700a14054c84c"
 
   bottle do
-    root_url "https://github.com/Noctem/pogeo-toolchain/releases/download/v1.4"
-    sha256 "9e1f6180844012247a4f05c7c20d9e0d17464891bdfd9765070870a5a01654be" => :sierra
-    sha256 "1549fdc9fa6562ceaceb390cef6c52e328cc36cac3b82c4b887937b46a6c0efc" => :el_capitan
-    sha256 "98f3cea14bd50ddc6717217a0608d3f4e6b3ab561e849827e9af26190b533c1a" => :yosemite
+    root_url "https://github.com/Noctem/pogeo-toolchain/releases/download/v1.5"
+    sha256 "6c8476834b433f973857e0f304d01e6925dc5849d76d21f4c9a9d14126cb1c57" => :sierra
+    sha256 "d13de4a5eb9c6bcf1e322fdb51651461ad3cbcd579e441b1892c1d0ced5c7f81" => :el_capitan
+    sha256 "d74880ff97a6f7bd693b1648b99a147fe8d7e74e05e0553d9ad3144413eb5771" => :yosemite
   end
 
   option "with-sphinx-doc", "Build HTML documentation"
